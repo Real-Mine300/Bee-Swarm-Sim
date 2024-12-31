@@ -37,24 +37,23 @@
 
     <!-- Load game scripts in correct order -->
     <script src="camera-controller.js"></script>
-    <script src="camera-controller.js"></script>
     <script src="game.js"></script>
     <script src="bee.js"></script>
     <script src="flower.js"></script>
     <script src="hive.js"></script>
     <script src="upgrades.js"></script>
     <script src="save-system.js"></script>
+    <script src="mobile-controls.js"></script>
     
-    <script src="camera-controller.js"></script>
+    <script>
         // Wait for all resources to load
-        // Initialize game after all scripts are loaded
+        window.addEventListener('load', () => {
             try {
                 window.game = new Game();
             } catch (error) {
                 console.error("Error initializing game:", error);
                 alert("Error starting game. Please refresh the page.");
             }
-            window.game = new Game();
         });
     </script>
 </body>
