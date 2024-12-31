@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bee Game</title>
+    <title>3D Bee Game</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Add Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
     <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
-        
-        <!-- HUD -->
+        <!-- Remove canvas since Three.js will create its own -->
         <div id="hud">
             <div id="stats">
                 <div>Pollen: <span id="pollen-count">0</span></div>
@@ -19,14 +19,12 @@
             <div id="minimap"></div>
         </div>
 
-        <!-- Main Menu -->
         <div id="main-menu">
-            <h1>Bee Game</h1>
+            <h1>3D Bee Game</h1>
             <button id="start-game">Start Game</button>
             <button id="options">Options</button>
         </div>
 
-        <!-- Add this near your other UI elements -->
         <div class="save-controls">
             <button onclick="exportSave()" class="save-btn">Export Save</button>
             <button onclick="importSave()" class="save-btn">Import Save</button>
@@ -41,7 +39,6 @@
     <script src="save-system.js"></script>
     <script src="mobile-controls.js"></script>
     <script>
-        // Initialize game after all scripts are loaded
         window.addEventListener('load', () => {
             window.game = new Game();
         });

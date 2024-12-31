@@ -1,16 +1,69 @@
 class Flower {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.size = 30;
+    constructor(x, y, z, model, physics) {
+        this.position = new THREE.Vector3(x, y, z);
         this.pollen = 100;
-        this.pollenRegenerationRate = 0.1;
+        this.maxPollen = 100;
+        this.originalHeight = 2; // Starting height
+        this.minHeight = 0.5;   // Minimum height when empty
+        
+        this.createModel();
+        this.setupPhysics(physics);
+    }
+
+    createModel() {
+        const geometry = new THREE.Group();
+        
+        // Stem
+        this.stem = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.1, 0.1, this.originalHeight, 8),
+            new THREE.MeshPhongMaterial({ color: 0x228B22 })
+        );
+        this.stem.position.y = this.originalHeight / 2;
+        
+        // Flower head
+        this.head = new THREE.Mesh(
+            new THREE.ConeGeometry(0.5, 0.5, 8),
+            new THREE.MeshPhongMaterial({ color: 0xFF69B4 })
+        );
+        this.head.position.y = this.originalHeight;
+        
+        geometry.add(this.stem);
+        geometry.add(this.head);
+        
+        this.model = geometry;
+        this.model.position.copy(this.position);
     }
 
     update(deltaTime) {
-        if (this.pollen < 100) {
-            this.pollen += this.pollenRegenerationRate * deltaTime;
+        // Update height based on pollen amount
+        const pollenRatio = this.pollen / this.maxPollen;
+        const targetHeight = this.minHeight + (this.originalHeight - this.minHeight) * pollenRatio;
+        
+        // Update stem height
+        this.stem.scale.y = targetHeight / this.originalHeight;
+        this.head.position.y = targetHeight;
+        
+        // Update physics body height
+        if (this.body) {
+            this.body.shapes[0].height = targetHeight;
+            this.body.updateBoundingSphereRadius();
         }
+        
+        // Update model position from physics
+        this.model.position.copy(this.body.position);
+        this.model.quaternion.copy(this.body.quaternion);
+    }
+
+    setupPhysics(physics) {
+        const shape = new CANNON.Cylinder(0.5, 0.5, this.originalHeight);
+        this.body = new CANNON.Body({
+            mass: 0, // Static body
+            shape: shape,
+            position: new CANNON.Vec3(this.position.x, this.position.y, this.position.z),
+            material: new CANNON.Material({ friction: 0.5 })
+        });
+        
+        physics.addBody(this.body);
     }
 
     render(ctx) {
