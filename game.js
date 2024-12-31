@@ -6,8 +6,15 @@ class Game {
         this.upgrades = {};
         this.isPlaying = false;
 
-        // Setup Three.js first
+        // Initialize physics first
+        this.setupPhysics();
+        
+        // Then setup Three.js
         this.setupThreeJS();
+        
+        // Setup lighting and environment
+        this.setupLighting();
+        this.createEnvironment();
         
         // Setup event listeners
         document.getElementById('start-game').addEventListener('click', () => this.startGame());
@@ -118,12 +125,23 @@ class Game {
     }
 
     setupPhysics() {
-        this.physics = new CANNON.World({
-            gravity: new CANNON.Vec3(0, -9.82, 0)
-        });
-        this.physics.broadphase = new CANNON.SAPBroadphase(this.physics);
-        this.physics.defaultContactMaterial.friction = 0.1;
-        this.physics.defaultContactMaterial.restitution = 0.7;
+        try {
+            this.physics = new CANNON.World();
+            this.physics.gravity.set(0, -9.82, 0);
+            this.physics.broadphase = new CANNON.NaiveBroadphase();
+            this.physics.solver.iterations = 10;
+            this.physics.defaultContactMaterial = new CANNON.ContactMaterial(
+                new CANNON.Material(),
+                new CANNON.Material(),
+                {
+                    friction: 0.1,
+                    restitution: 0.7
+                }
+            );
+        } catch (error) {
+            console.error("Error initializing physics:", error);
+            alert("Error loading physics engine. Please refresh the page.");
+        }
     }
 
     setupLighting() {
@@ -196,27 +214,38 @@ class Game {
     }
 
     createGameObjects() {
-        // Create player bee higher up
-        this.player = new Bee(0, 10, 0, true, null, this.physics);
-        this.scene.add(this.player.model);
+        try {
+            // Create player bee higher up
+            this.player = new Bee(0, 10, 0, true, null, this.physics);
+            if (this.player && this.player.model) {
+                this.scene.add(this.player.model);
+            }
 
-        // Create flowers with more spacing
-        this.flowers = [];
-        for (let i = 0; i < 20; i++) {
-            const flower = new Flower(
-                Math.random() * 80 - 40,
-                0,
-                Math.random() * 80 - 40,
-                null,
-                this.physics
-            );
-            this.flowers.push(flower);
-            this.scene.add(flower.model);
+            // Create flowers with more spacing
+            this.flowers = [];
+            for (let i = 0; i < 20; i++) {
+                const flower = new Flower(
+                    Math.random() * 80 - 40,
+                    0,
+                    Math.random() * 80 - 40,
+                    null,
+                    this.physics
+                );
+                if (flower && flower.model) {
+                    this.flowers.push(flower);
+                    this.scene.add(flower.model);
+                }
+            }
+
+            // Create hive higher up
+            this.hive = new Hive(0, 10, -30, null, this.physics);
+            if (this.hive && this.hive.model) {
+                this.scene.add(this.hive.model);
+            }
+        } catch (error) {
+            console.error("Error creating game objects:", error);
+            alert("Error creating game objects. Please refresh the page.");
         }
-
-        // Create hive higher up
-        this.hive = new Hive(0, 10, -30, null, this.physics);
-        this.scene.add(this.hive.model);
     }
 
     animate() {

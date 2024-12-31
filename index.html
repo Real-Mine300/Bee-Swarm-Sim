@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Bee Game</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Update Three.js and dependencies -->
+    <!-- Load Three.js first -->
     <script src="https://unpkg.com/three@0.132.2/build/three.min.js"></script>
+    <!-- Load Cannon.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+    <!-- Load Three.js extras -->
     <script src="https://unpkg.com/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://unpkg.com/three@0.132.2/examples/js/objects/Sky.js"></script>
 </head>
@@ -33,18 +35,25 @@
         </div>
     </div>
 
-    <!-- Load game scripts after Three.js -->
+    <!-- Load game scripts in correct order -->
+    <script src="camera-controller.js"></script>
+    <script src="camera-controller.js"></script>
     <script src="game.js"></script>
     <script src="bee.js"></script>
     <script src="flower.js"></script>
     <script src="hive.js"></script>
     <script src="upgrades.js"></script>
     <script src="save-system.js"></script>
-    <script src="mobile-controls.js"></script>
+    
     <script src="camera-controller.js"></script>
-    <script>
+        // Wait for all resources to load
         // Initialize game after all scripts are loaded
-        window.addEventListener('load', () => {
+            try {
+                window.game = new Game();
+            } catch (error) {
+                console.error("Error initializing game:", error);
+                alert("Error starting game. Please refresh the page.");
+            }
             window.game = new Game();
         });
     </script>

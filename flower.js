@@ -7,7 +7,9 @@ class Flower {
         this.minHeight = 0.5;   // Minimum height when empty
         
         this.createModel();
-        this.setupPhysics(physics);
+        if (physics) {
+            this.setupPhysics(physics);
+        }
     }
 
     createModel() {
@@ -55,15 +57,17 @@ class Flower {
     }
 
     setupPhysics(physics) {
-        const shape = new CANNON.Cylinder(0.5, 0.5, this.originalHeight);
-        this.body = new CANNON.Body({
-            mass: 0, // Static body
-            shape: shape,
-            position: new CANNON.Vec3(this.position.x, this.position.y, this.position.z),
-            material: new CANNON.Material({ friction: 0.5 })
-        });
-        
-        physics.addBody(this.body);
+        try {
+            const shape = new CANNON.Cylinder(0.5, 0.5, this.originalHeight);
+            this.physicsBody = new CANNON.Body({
+                mass: 0,
+                shape: shape,
+                position: new CANNON.Vec3(this.position.x, this.position.y, this.position.z)
+            });
+            physics.addBody(this.physicsBody);
+        } catch (error) {
+            console.error("Error setting up flower physics:", error);
+        }
     }
 
     render(ctx) {
