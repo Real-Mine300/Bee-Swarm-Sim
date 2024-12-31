@@ -4,16 +4,29 @@ class Game {
         this.totalHoney = 0;
         this.bees = [];
         this.upgrades = {};
+        this.isPlaying = false;
+        
+        // Setup event listeners
+        document.getElementById('start-game').addEventListener('click', () => this.startGame());
         
         this.setupThreeJS();
         this.setupPhysics();
         this.setupLighting();
         this.loadModels().then(() => {
             this.createEnvironment();
-            this.createGameObjects();
-            this.setupParticleSystems();
-            this.animate();
+            // Don't create game objects until game starts
         });
+    }
+
+    startGame() {
+        if (this.isPlaying) return;
+        
+        this.isPlaying = true;
+        document.getElementById('main-menu').style.display = 'none';
+        
+        this.createGameObjects();
+        this.setupParticleSystems();
+        this.animate();
     }
 
     setupThreeJS() {
