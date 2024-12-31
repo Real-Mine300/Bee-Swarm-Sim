@@ -54,15 +54,29 @@ class Game {
         }
 
         // Event listeners
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
         window.addEventListener('resize', () => this.setCanvasSize());
-        document.getElementById('start-game').addEventListener('click', () => this.start());
+        
+        const startButton = document.getElementById('start-game');
+        if (startButton) {
+            startButton.addEventListener('click', () => {
+                console.log('Start button clicked'); // Debug log
+                this.start();
+            });
+        } else {
+            console.error('Start button not found!'); // Debug log
+        }
     }
 
     start() {
+        console.log('Game starting...'); // Debug log
         document.getElementById('main-menu').style.display = 'none';
         this.isRunning = true;
         this.saveSystem.load();  // Load any saved game
-        this.gameLoop();
+        requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
     }
 
     gameLoop(timestamp) {
@@ -122,7 +136,4 @@ class Game {
             this.saveSystem.save();
         }, 60000);
     }
-}
-
-// Start the game
-const game = new Game(); 
+} 

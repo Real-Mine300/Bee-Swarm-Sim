@@ -111,4 +111,19 @@ class Bee {
             document.getElementById('pollen-count').textContent = this.pollen;
         }
     }
+
+    getExportData() {
+        return {
+            level: this.level,
+            cost: this.cost,
+            honeyPerSecond: this.honeyPerSecond
+        };
+    }
+
+    loadFromData(data) {
+        this.level = data.level;
+        this.cost = data.cost;
+        this.honeyPerSecond = data.honeyPerSecond;
+        // Update any other necessary properties
+    }
 } 
