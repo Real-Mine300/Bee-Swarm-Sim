@@ -3,13 +3,15 @@ class Player {
         this.position = new THREE.Vector3(x, y, z);
         this.velocity = new THREE.Vector3();
         this.rotation = new THREE.Euler();
-        this.speed = 10;
+        this.speed = 15;
+        this.jumpForce = 7;
         this.mouseSensitivity = 0.002;
-        this.minHeight = 2; // Minimum height from ground
+        this.minHeight = 2;
+        this.canJump = true;
         
         this.createModel();
         this.setupPhysics(physics);
-        this.setupMouseControl();
+        this.setupControls();
     }
 
     createModel() {
@@ -37,12 +39,12 @@ class Player {
         physics.addBody(this.physicsBody);
     }
 
-    setupMouseControl() {
+    setupControls() {
+        // Mouse controls
         document.addEventListener('mousemove', (e) => {
             if (document.pointerLockElement === document.body) {
                 this.rotation.y -= e.movementX * this.mouseSensitivity;
                 this.model.rotation.y = this.rotation.y;
-                // Let the camera controller handle vertical movement
                 if (window.game && window.game.cameraController) {
                     window.game.cameraController.handleMouseMove(e);
                 }
@@ -52,47 +54,98 @@ class Player {
         document.addEventListener('click', () => {
             document.body.requestPointerLock();
         });
+
+        // Keyboard controls
+        this.keys = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            jump: false
+        };
+
+        document.addEventListener('keydown', (e) => {
+            switch(e.code) {
+                case 'KeyW':
+                case 'ArrowUp':
+                    this.keys.forward = true;
+                    break;
+                case 'KeyS':
+                case 'ArrowDown':
+                    this.keys.backward = true;
+                    break;
+                case 'KeyA':
+                case 'ArrowLeft':
+                    this.keys.left = true;
+                    break;
+                case 'KeyD':
+                case 'ArrowRight':
+                    this.keys.right = true;
+                    break;
+                case 'Space':
+                    this.keys.jump = true;
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            switch(e.code) {
+                case 'KeyW':
+                case 'ArrowUp':
+                    this.keys.forward = false;
+                    break;
+                case 'KeyS':
+                case 'ArrowDown':
+                    this.keys.backward = false;
+                    break;
+                case 'KeyA':
+                case 'ArrowLeft':
+                    this.keys.left = false;
+                    break;
+                case 'KeyD':
+                case 'ArrowRight':
+                    this.keys.right = false;
+                    break;
+                case 'Space':
+                    this.keys.jump = false;
+                    break;
+            }
+        });
     }
 
     update(deltaTime) {
-        // Get movement input
+        // Movement direction
         const moveDirection = new THREE.Vector3();
         
-        if (keys.w) moveDirection.z -= 1;
-        if (keys.s) moveDirection.z += 1;
-        if (keys.a) moveDirection.x -= 1;
-        if (keys.d) moveDirection.x += 1;
-        if (keys.space) moveDirection.y += 1;
+        if (this.keys.forward) moveDirection.z -= 1;
+        if (this.keys.backward) moveDirection.z += 1;
+        if (this.keys.left) moveDirection.x -= 1;
+        if (this.keys.right) moveDirection.x += 1;
         
         // Apply rotation to movement
         moveDirection.applyEuler(this.rotation);
-        moveDirection.normalize().multiplyScalar(this.speed * deltaTime);
+        moveDirection.normalize().multiplyScalar(this.speed);
         
-        // Update velocity
+        // Update physics body velocity
         this.physicsBody.velocity.x = moveDirection.x;
         this.physicsBody.velocity.z = moveDirection.z;
-        
+
+        // Handle jumping
+        if (this.keys.jump && this.canJump && this.physicsBody.position.y <= this.minHeight + 0.1) {
+            this.physicsBody.velocity.y = this.jumpForce;
+            this.canJump = false;
+            setTimeout(() => this.canJump = true, 1000); // Jump cooldown
+        }
+
         // Prevent going underground
         if (this.physicsBody.position.y < this.minHeight) {
             this.physicsBody.position.y = this.minHeight;
             this.physicsBody.velocity.y = 0;
+            this.canJump = true;
         }
-        
+
         // Update model position from physics
         this.model.position.copy(this.physicsBody.position);
         this.position.copy(this.model.position);
     }
-}
-
-// Global key state
-const keys = {
-    w: false,
-    s: false,
-    a: false,
-    d: false,
-    space: false
-};
-
-// Setup key listeners
-document.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
-document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false); 
+} 

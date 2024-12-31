@@ -245,42 +245,18 @@ class Game {
             this.player = new Player(0, 5, 0, this.physics);
             this.scene.add(this.player.model);
 
-            // Create bees that follow the player
-            this.bees = [];
-            for (let i = 0; i < 5; i++) {
-                const bee = new Bee(
-                    Math.random() * 40 - 20,
-                    5,
-                    Math.random() * 40 - 20,
-                    this.physics
-                );
-                this.bees.push(bee);
-                this.scene.add(bee.model);
-            }
-
-            // Create flower fields
-            this.flowers = [];
+            // Create flower fields in rectangular patches
             this.createFlowerFields();
 
-            // Create scattered flowers
-            for (let i = 0; i < 10; i++) {
-                const flower = new Flower(
-                    Math.random() * 80 - 40,
-                    0,
-                    Math.random() * 80 - 40,
-                    null,
-                    this.physics
-                );
-                this.flowers.push(flower);
-                this.scene.add(flower.model);
-            }
-
-            // Create hive on the ground
-            this.hive = new Hive(0, 0, -30, null, this.physics);
-            this.scene.add(this.hive.model);
-
-            // Add trees around the map
+            // Create trees in clusters
             this.createTrees();
+
+            // Create bees that follow the player
+            this.createBees();
+
+            // Create hive
+            this.createHive();
+
         } catch (error) {
             console.error("Error creating game objects:", error);
             alert("Error creating game objects. Please refresh the page.");
@@ -348,26 +324,27 @@ class Game {
 
     createFlowerFields() {
         const fields = [
-            { x: -40, z: -40, type: 'sunflower', color: 0xFFD700 },
-            { x: 40, z: -40, type: 'rose', color: 0xFF0000 },
-            { x: -40, z: 40, type: 'lavender', color: 0x9370DB },
-            { x: 40, z: 40, type: 'daisy', color: 0xFFFFFF }
+            { x: -40, z: -40, width: 20, height: 20, type: 'sunflower', color: 0xFFD700 },
+            { x: 40, z: -40, width: 20, height: 20, type: 'rose', color: 0xFF0000 },
+            { x: -40, z: 40, width: 20, height: 20, type: 'lavender', color: 0x9370DB },
+            { x: 40, z: 40, width: 20, height: 20, type: 'daisy', color: 0xFFFFFF }
         ];
 
+        this.flowers = [];
+
         fields.forEach(field => {
-            // Create 25 flowers in a 5x5 grid for each field
-            for (let i = 0; i < 5; i++) {
-                for (let j = 0; j < 5; j++) {
+            // Create rectangular patches of flowers
+            for (let x = 0; x < field.width; x += 2) {
+                for (let z = 0; z < field.height; z += 2) {
                     const flower = new Flower(
-                        field.x + (i * 4) - 8,  // Spread flowers 4 units apart
+                        field.x + x - field.width/2,
                         0,
-                        field.z + (j * 4) - 8,
+                        field.z + z - field.height/2,
                         null,
                         this.physics
                     );
-                    // Customize flower appearance based on type
                     flower.head.material.color.setHex(field.color);
-                    flower.pollen = 150;  // More pollen in flower fields
+                    flower.pollen = 150;
                     flower.maxPollen = 150;
                     this.flowers.push(flower);
                     this.scene.add(flower.model);
@@ -459,5 +436,53 @@ class Game {
                 }
             });
         }
+    }
+
+    createTrees() {
+        // Create clusters of trees
+        const treeSpots = [
+            { x: -70, z: -70 },
+            { x: 70, z: -70 },
+            { x: -70, z: 70 },
+            { x: 70, z: 70 }
+        ];
+
+        treeSpots.forEach(spot => {
+            for (let i = 0; i < 10; i++) {
+                const tree = this.createBasicTree();
+                const offset = new THREE.Vector3(
+                    (Math.random() - 0.5) * 20,
+                    0,
+                    (Math.random() - 0.5) * 20
+                );
+                tree.position.set(
+                    spot.x + offset.x,
+                    0,
+                    spot.z + offset.z
+                );
+                tree.scale.setScalar(Math.random() * 1.5 + 1);
+                tree.rotation.y = Math.random() * Math.PI * 2;
+                this.scene.add(tree);
+            }
+        });
+    }
+
+    createBees() {
+        this.bees = [];
+        for (let i = 0; i < 5; i++) {
+            const bee = new Bee(
+                Math.random() * 40 - 20,
+                5 + Math.random() * 3,
+                Math.random() * 40 - 20,
+                this.physics
+            );
+            this.bees.push(bee);
+            this.scene.add(bee.model);
+        }
+    }
+
+    createHive() {
+        this.hive = new Hive(0, 0, -30, null, this.physics);
+        this.scene.add(this.hive.model);
     }
 } 
