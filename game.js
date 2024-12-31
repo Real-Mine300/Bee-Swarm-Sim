@@ -21,6 +21,13 @@ class Game {
 
         this.gridSize = 10; // Size of each grid square
         this.createGrid();
+
+        // Initialize options
+        this.options = new GameOptions();
+        
+        // Set default graphics
+        this.renderer.shadowMap.enabled = false;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     }
 
     setupThreeJS() {
@@ -243,7 +250,7 @@ class Game {
 
     async createGameObjects() {
         try {
-            // Create taller hive
+            // Create hive first (make it taller)
             this.hive = new Hive(0, 0, -30, null, this.physics);
             this.hive.model.scale.setScalar(2.5);
             this.scene.add(this.hive.model);
@@ -259,7 +266,7 @@ class Game {
             // Setup camera controller
             this.cameraController = new CameraController(this.camera, this.player);
 
-            // Create flower fields with different types
+            // Create flower fields
             this.createFlowerFields();
 
             // Create bees
@@ -291,7 +298,7 @@ class Game {
             // Update bees
             if (this.bees) {
                 this.bees.forEach(bee => {
-                    if (bee.update && this.player) {
+                    if (bee && bee.update && this.player) {
                         bee.update(deltaTime, this.player.position);
                     }
                 });
@@ -300,7 +307,7 @@ class Game {
             // Update flowers
             if (this.flowers) {
                 this.flowers.forEach(flower => {
-                    if (flower.update) {
+                    if (flower && flower.update) {
                         flower.update(deltaTime);
                     }
                 });
@@ -496,7 +503,7 @@ class Game {
                     Math.random() * 40 - 20,
                     this.physics
                 );
-                if (bee.model) {
+                if (bee && bee.model) {
                     this.bees.push(bee);
                     this.scene.add(bee.model);
                 }

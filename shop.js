@@ -31,20 +31,21 @@ class Shop {
     createModel() {
         const geometry = new THREE.Group();
         
-        // Main building
-        const buildingGeometry = new THREE.BoxGeometry(8, 6, 20);
+        // Main building - make it taller
+        const buildingGeometry = new THREE.BoxGeometry(8, 10, 20);
         const buildingMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x8B4513,
-            metalness: 0.3,
-            roughness: 0.8
+            color: 0x8B4513
         });
         const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+        building.castShadow = true;
+        building.receiveShadow = true;
         
-        // Roof
-        const roofGeometry = new THREE.ConeGeometry(6, 4, 4);
+        // Roof - make it bigger
+        const roofGeometry = new THREE.ConeGeometry(6, 6, 4);
         const roofMaterial = new THREE.MeshPhongMaterial({ color: 0x8B0000 });
         const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-        roof.position.y = 5;
+        roof.position.y = 8;
+        roof.castShadow = true;
         
         geometry.add(building);
         geometry.add(roof);

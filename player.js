@@ -167,11 +167,16 @@ class Player {
 
         if (window.game && window.game.flowers) {
             window.game.flowers.forEach(flower => {
+                if (!flower || !flower.position) return;
+                
                 const distance = this.position.distanceTo(flower.position);
                 if (distance <= this.collectionRange && flower.pollen > 0) {
                     const collectionAmount = this.collectionRate * deltaTime;
                     const collected = flower.collectPollen(collectionAmount);
                     this.currentPollen = Math.min(this.pollenCapacity, this.currentPollen + collected);
+                    
+                    // Update HUD immediately
+                    this.updateHUD();
                 }
             });
         }

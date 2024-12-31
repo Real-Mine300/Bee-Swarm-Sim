@@ -7,11 +7,13 @@ class Bee {
         this.height = 1;
         this.pollenCapacity = 50;
         this.currentPollen = 0;
-        this.collectionRate = 10; // Pollen per second
+        this.collectionRate = 10;
         this.targetFlower = null;
         
         this.createModel();
-        this.setupPhysics(physics);
+        if (physics) {
+            this.setupPhysics(physics);
+        }
     }
 
     update(deltaTime, playerPosition) {
@@ -121,17 +123,21 @@ class Bee {
     }
 
     setupPhysics(physics) {
-        const shape = new CANNON.Box(new CANNON.Vec3(0.25, 0.25, 0.25));
-        this.physicsBody = new CANNON.Body({
-            mass: 1,
-            shape: shape,
-            position: new CANNON.Vec3(this.position.x, this.position.y, this.position.z),
-            material: new CANNON.Material({ friction: 0.1 })
-        });
-        
-        // Allow flying by reducing gravity effect
-        this.physicsBody.gravity.set(0, -2, 0);
-        
-        physics.addBody(this.physicsBody);
+        try {
+            const shape = new CANNON.Box(new CANNON.Vec3(0.25, 0.25, 0.25));
+            this.physicsBody = new CANNON.Body({
+                mass: 1,
+                shape: shape,
+                position: new CANNON.Vec3(this.position.x, this.position.y, this.position.z),
+                material: new CANNON.Material({ friction: 0.1 })
+            });
+            
+            // Allow flying by reducing gravity effect
+            this.physicsBody.gravity.set(0, -2, 0);
+            
+            physics.addBody(this.physicsBody);
+        } catch (error) {
+            console.error("Error setting up bee physics:", error);
+        }
     }
 } 
