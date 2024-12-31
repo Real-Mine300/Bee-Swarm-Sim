@@ -12,14 +12,52 @@ class Game {
         this.setupThreeJS();
         this.setupPhysics();
         this.setupLighting();
-        this.loadModels().then(() => {
-            this.createEnvironment();
-            // Don't create game objects until game starts
-        });
+        this.createEnvironment();  // Create environment immediately
     }
 
-    startGame() {
+    async loadModels() {
+        try {
+            const loader = new THREE.GLTFLoader();
+            
+            // For now, let's skip loading models and create basic shapes
+            this.models = {
+                bee: null,
+                flower: null,
+                hive: null,
+                tree: this.createBasicTree()
+            };
+            return true;
+        } catch (error) {
+            console.error("Error loading models:", error);
+            return false;
+        }
+    }
+
+    createBasicTree() {
+        const tree = new THREE.Group();
+        
+        // Create trunk
+        const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.8, 5, 8);
+        const trunkMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
+        const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+        
+        // Create leaves
+        const leavesGeometry = new THREE.ConeGeometry(2, 4, 8);
+        const leavesMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 });
+        const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
+        leaves.position.y = 4;
+        
+        tree.add(trunk);
+        tree.add(leaves);
+        
+        return tree;
+    }
+
+    async startGame() {
         if (this.isPlaying) return;
+        
+        // Load models before starting
+        await this.loadModels();
         
         this.isPlaying = true;
         document.getElementById('main-menu').style.display = 'none';
@@ -61,18 +99,6 @@ class Game {
         this.physics.broadphase = new CANNON.SAPBroadphase(this.physics);
         this.physics.defaultContactMaterial.friction = 0.1;
         this.physics.defaultContactMaterial.restitution = 0.7;
-    }
-
-    async loadModels() {
-        const loader = new GLTFLoader();
-        
-        // Load models with promises
-        this.models = {
-            bee: await loader.loadAsync('models/bee.glb'),
-            flower: await loader.loadAsync('models/flower.glb'),
-            hive: await loader.loadAsync('models/hive.glb'),
-            tree: await loader.loadAsync('models/tree.glb')
-        };
     }
 
     setupLighting() {
