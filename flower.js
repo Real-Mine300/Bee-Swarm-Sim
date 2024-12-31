@@ -3,12 +3,55 @@ class Flower {
         this.position = new THREE.Vector3(x, y, z);
         this.pollen = 100;
         this.maxPollen = 100;
-        this.originalHeight = 2; // Starting height
-        this.minHeight = 0.5;   // Minimum height when empty
+        this.originalHeight = 2;
+        this.minHeight = 0.5;
         
         this.createModel();
         if (physics) {
             this.setupPhysics(physics);
+        }
+    }
+
+    update(deltaTime) {
+        // Update height based on pollen amount
+        const pollenRatio = this.pollen / this.maxPollen;
+        const targetHeight = this.minHeight + (this.originalHeight - this.minHeight) * pollenRatio;
+        
+        // Update stem height
+        this.stem.scale.y = targetHeight / this.originalHeight;
+        this.head.position.y = targetHeight;
+        
+        // Update physics body height if it exists
+        if (this.physicsBody) {
+            this.physicsBody.shapes[0].height = targetHeight;
+            this.physicsBody.updateBoundingSphereRadius();
+            
+            // Update model position from physics
+            this.model.position.copy(new THREE.Vector3(
+                this.physicsBody.position.x,
+                this.physicsBody.position.y,
+                this.physicsBody.position.z
+            ));
+            this.model.quaternion.copy(new THREE.Quaternion(
+                this.physicsBody.quaternion.x,
+                this.physicsBody.quaternion.y,
+                this.physicsBody.quaternion.z,
+                this.physicsBody.quaternion.w
+            ));
+        }
+    }
+
+    setupPhysics(physics) {
+        try {
+            const shape = new CANNON.Cylinder(0.5, 0.5, this.originalHeight);
+            this.physicsBody = new CANNON.Body({
+                mass: 0, // Static body
+                shape: shape,
+                position: new CANNON.Vec3(this.position.x, this.position.y, this.position.z)
+            });
+            physics.addBody(this.physicsBody);
+        } catch (error) {
+            console.error("Error setting up flower physics:", error);
         }
     }
 
@@ -34,40 +77,6 @@ class Flower {
         
         this.model = geometry;
         this.model.position.copy(this.position);
-    }
-
-    update(deltaTime) {
-        // Update height based on pollen amount
-        const pollenRatio = this.pollen / this.maxPollen;
-        const targetHeight = this.minHeight + (this.originalHeight - this.minHeight) * pollenRatio;
-        
-        // Update stem height
-        this.stem.scale.y = targetHeight / this.originalHeight;
-        this.head.position.y = targetHeight;
-        
-        // Update physics body height
-        if (this.body) {
-            this.body.shapes[0].height = targetHeight;
-            this.body.updateBoundingSphereRadius();
-        }
-        
-        // Update model position from physics
-        this.model.position.copy(this.body.position);
-        this.model.quaternion.copy(this.body.quaternion);
-    }
-
-    setupPhysics(physics) {
-        try {
-            const shape = new CANNON.Cylinder(0.5, 0.5, this.originalHeight);
-            this.physicsBody = new CANNON.Body({
-                mass: 0,
-                shape: shape,
-                position: new CANNON.Vec3(this.position.x, this.position.y, this.position.z)
-            });
-            physics.addBody(this.physicsBody);
-        } catch (error) {
-            console.error("Error setting up flower physics:", error);
-        }
     }
 
     render(ctx) {

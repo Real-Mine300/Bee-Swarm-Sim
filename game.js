@@ -6,11 +6,11 @@ class Game {
         this.upgrades = {};
         this.isPlaying = false;
 
-        // Initialize physics first
-        this.setupPhysics();
-        
-        // Then setup Three.js
+        // Setup Three.js first
         this.setupThreeJS();
+        
+        // Setup physics
+        this.setupPhysics();
         
         // Setup lighting and environment
         this.setupLighting();
