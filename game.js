@@ -12,16 +12,16 @@ class Game {
         this.setupThreeJS();
         this.setupPhysics();
         this.setupLighting();
-        this.createEnvironment();  // Create environment immediately
-        
-        // Add initial camera until player is created
+        this.createEnvironment();
+
+        // Set initial camera position higher and further back
         this.camera = new THREE.PerspectiveCamera(
             75,
             window.innerWidth / window.innerHeight,
             0.1,
             1000
         );
-        this.camera.position.set(0, 15, 30);
+        this.camera.position.set(0, 30, 50); // Moved camera back and up
         this.camera.lookAt(0, 0, 0);
     }
 
@@ -115,12 +115,12 @@ class Game {
     }
 
     setupLighting() {
-        // Ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        // Brighter ambient light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         this.scene.add(ambientLight);
 
-        // Sun
-        this.sunLight = new THREE.DirectionalLight(0xffffff, 1);
+        // Brighter directional light
+        this.sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
         this.sunLight.position.set(50, 100, 50);
         this.sunLight.castShadow = true;
         this.sunLight.shadow.mapSize.width = 2048;
@@ -133,17 +133,9 @@ class Game {
         this.sunLight.shadow.camera.bottom = -100;
         this.scene.add(this.sunLight);
 
-        // Add some colored point lights for atmosphere
-        const colors = [0xff7e6b, 0x7eb1ff, 0x7eff8b];
-        colors.forEach((color, i) => {
-            const light = new THREE.PointLight(color, 1, 50);
-            light.position.set(
-                Math.sin(i * Math.PI * 2 / 3) * 30,
-                10,
-                Math.cos(i * Math.PI * 2 / 3) * 30
-            );
-            this.scene.add(light);
-        });
+        // Add hemisphere light for better ambient lighting
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+        this.scene.add(hemiLight);
     }
 
     setupParticleSystems() {
@@ -166,35 +158,27 @@ class Game {
         // Set sky color
         this.scene.background = new THREE.Color(0x87CEEB);
 
-        // Ground with realistic grass
+        // Ground with more visible color
         const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
         const groundMaterial = new THREE.MeshStandardMaterial({
-            color: 0x567d46,
+            color: 0x3a9648, // Brighter green
             roughness: 0.8,
             metalness: 0.1
         });
         
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         ground.rotation.x = -Math.PI / 2;
-        ground.position.y = 0;  // Moved up from -10
+        ground.position.y = 0;
         ground.receiveShadow = true;
         this.scene.add(ground);
 
-        // Add ground physics
-        const groundBody = new CANNON.Body({
-            type: CANNON.Body.STATIC,
-            shape: new CANNON.Plane()
-        });
-        groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-        this.physics.addBody(groundBody);
-
-        // Add trees
-        for (let i = 0; i < 50; i++) {
+        // Add trees with more spacing
+        for (let i = 0; i < 30; i++) {
             const tree = this.createBasicTree();
             tree.position.set(
-                Math.random() * 200 - 100,
+                Math.random() * 160 - 80, // More spread out
                 0,
-                Math.random() * 200 - 100
+                Math.random() * 160 - 80
             );
             tree.scale.setScalar(Math.random() * 2 + 1);
             tree.rotation.y = Math.random() * Math.PI * 2;
@@ -203,17 +187,17 @@ class Game {
     }
 
     createGameObjects() {
-        // Create player bee with physics
-        this.player = new Bee(0, 5, 0, true, null, this.physics);
+        // Create player bee higher up
+        this.player = new Bee(0, 10, 0, true, null, this.physics);
         this.scene.add(this.player.model);
 
-        // Create flowers with physics
+        // Create flowers with more spacing
         this.flowers = [];
         for (let i = 0; i < 20; i++) {
             const flower = new Flower(
-                Math.random() * 100 - 50,
+                Math.random() * 80 - 40,
                 0,
-                Math.random() * 100 - 50,
+                Math.random() * 80 - 40,
                 null,
                 this.physics
             );
@@ -221,8 +205,8 @@ class Game {
             this.scene.add(flower.model);
         }
 
-        // Create hive with physics
-        this.hive = new Hive(0, 5, -30, null, this.physics);
+        // Create hive higher up
+        this.hive = new Hive(0, 10, -30, null, this.physics);
         this.scene.add(this.hive.model);
     }
 
@@ -238,8 +222,8 @@ class Game {
         if (this.player) {
             this.player.update(deltaTime);
             
-            // Update camera to follow player
-            const idealOffset = new THREE.Vector3(0, 10, 20);
+            // Better camera following
+            const idealOffset = new THREE.Vector3(0, 15, 25); // Higher and further back
             idealOffset.applyQuaternion(this.player.model.quaternion);
             idealOffset.add(this.player.position);
             
@@ -247,6 +231,7 @@ class Game {
             this.camera.lookAt(this.player.position);
         }
 
+        // Update other objects
         if (this.flowers) {
             this.flowers.forEach(flower => flower.update(deltaTime));
         }
@@ -254,10 +239,7 @@ class Game {
             this.hive.update(deltaTime);
         }
 
-        // Update particle systems
-        this.updateParticles();
-
-        // Render scene with the appropriate camera
+        // Render scene
         this.renderer.render(this.scene, this.camera);
     }
 

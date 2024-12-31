@@ -27,22 +27,24 @@ class Bee {
         const height = this.isPlayer ? 3 : 1;
         const width = this.isPlayer ? 1 : 0.5;
         
-        // Body
+        // Body - brighter colors
         const bodyGeometry = new THREE.BoxGeometry(width, height, width);
         const bodyMaterial = new THREE.MeshPhongMaterial({ 
             color: this.isPlayer ? 0xFFD700 : 0xFFA500,
-            shininess: 100 
+            shininess: 100,
+            emissive: this.isPlayer ? 0x332200 : 0x331100 // Add some emissive light
         });
         this.body = new THREE.Mesh(bodyGeometry, bodyMaterial);
         this.body.castShadow = true;
 
-        // Wings (scaled according to body size)
+        // Wings - more visible
         const wingGeometry = new THREE.PlaneGeometry(width * 1.5, height * 0.3);
         const wingMaterial = new THREE.MeshPhongMaterial({ 
             color: 0xFFFFFF,
             transparent: true,
-            opacity: 0.5,
-            side: THREE.DoubleSide
+            opacity: 0.7, // Increased opacity
+            side: THREE.DoubleSide,
+            emissive: 0x666666 // Add some emissive light
         });
         
         this.leftWing = new THREE.Mesh(wingGeometry, wingMaterial);
