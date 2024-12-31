@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bee Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- HUD -->
+        <div id="hud">
+            <div id="stats">
+                <div>Pollen: <span id="pollen-count">0</span></div>
+                <div>Honey: <span id="honey-count">0</span></div>
+            </div>
+            <div id="minimap"></div>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="main-menu">
+            <h1>Bee Game</h1>
+            <button id="start-game">Start Game</button>
+            <button id="options">Options</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+    <script src="bee.js"></script>
+    <script src="flower.js"></script>
+    <script src="hive.js"></script>
+    <script src="audio.js"></script>
+    <script src="upgrades.js"></script>
+    <script src="save-system.js"></script>
+    <script src="mobile-controls.js"></script>
+</body>
+</html> 
