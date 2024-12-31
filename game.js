@@ -12,11 +12,6 @@ class Game {
         this.isRunning = false;
         this.lastTime = 0;
         
-        this.audio = new AudioManager();
-        this.upgradeSystem = new UpgradeSystem(this.player, this.hive);
-        this.saveSystem = new SaveSystem(this);
-        this.mobileControls = new MobileControls(this.player);
-        
         this.init();
     }
 
@@ -35,6 +30,11 @@ class Game {
 
         // Initialize hive
         this.hive = new Hive(100, 100);
+
+        // Initialize game systems after player and hive are created
+        this.upgradeSystem = new UpgradeSystem(this.player, this.hive);
+        this.saveSystem = new SaveSystem(this);
+        this.mobileControls = new MobileControls(this.player);
 
         // Create some flowers
         for (let i = 0; i < 10; i++) {
@@ -61,8 +61,7 @@ class Game {
     start() {
         document.getElementById('main-menu').style.display = 'none';
         this.isRunning = true;
-        this.audio.startBackgroundMusic();
-        this.saveSystem.load();
+        this.saveSystem.load();  // Load any saved game
         this.gameLoop();
     }
 
