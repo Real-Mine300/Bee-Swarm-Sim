@@ -58,16 +58,16 @@ class Flower {
     createModel() {
         const geometry = new THREE.Group();
         
-        // Stem
+        // Create rectangular stem
         this.stem = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.1, 0.1, this.originalHeight, 8),
+            new THREE.BoxGeometry(0.3, this.originalHeight, 0.3),
             new THREE.MeshPhongMaterial({ color: 0x228B22 })
         );
         this.stem.position.y = this.originalHeight / 2;
         
-        // Flower head
+        // Create rectangular flower head
         this.head = new THREE.Mesh(
-            new THREE.ConeGeometry(0.5, 0.5, 8),
+            new THREE.BoxGeometry(0.8, 0.4, 0.8),
             new THREE.MeshPhongMaterial({ color: 0xFF69B4 })
         );
         this.head.position.y = this.originalHeight;
@@ -77,6 +77,12 @@ class Flower {
         
         this.model = geometry;
         this.model.position.copy(this.position);
+        
+        // Add shadows
+        this.stem.castShadow = true;
+        this.stem.receiveShadow = true;
+        this.head.castShadow = true;
+        this.head.receiveShadow = true;
     }
 
     render(ctx) {

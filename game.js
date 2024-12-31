@@ -185,40 +185,74 @@ class Game {
     }
 
     createEnvironment() {
-        // Ground with more visible color
-        const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
+        // Ground with darker green and shadows
+        const groundGeometry = new THREE.PlaneGeometry(200, 200);
         const groundMaterial = new THREE.MeshStandardMaterial({
-            color: 0x3a9648, // Brighter green
+            color: 0x2d5a27,
             roughness: 0.8,
-            metalness: 0.1
+            metalness: 0.2
         });
         
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         ground.rotation.x = -Math.PI / 2;
-        ground.position.y = 0;
         ground.receiveShadow = true;
         this.scene.add(ground);
 
-        // Add trees with more spacing
-        for (let i = 0; i < 30; i++) {
-            const tree = this.createBasicTree();
-            tree.position.set(
-                Math.random() * 160 - 80, // More spread out
-                0,
-                Math.random() * 160 - 80
-            );
-            tree.scale.setScalar(Math.random() * 2 + 1);
-            tree.rotation.y = Math.random() * Math.PI * 2;
-            this.scene.add(tree);
-        }
+        // Add walls
+        const wallMaterial = new THREE.MeshStandardMaterial({
+            color: 0x808080,
+            roughness: 0.7
+        });
+        
+        const wallGeometry = new THREE.BoxGeometry(2, 20, 200);
+        const wallGeometry2 = new THREE.BoxGeometry(200, 20, 2);
+        
+        // Create walls
+        const walls = [
+            { pos: [-100, 10, 0], rot: [0, 0, 0], geo: wallGeometry },
+            { pos: [100, 10, 0], rot: [0, 0, 0], geo: wallGeometry },
+            { pos: [0, 10, -100], rot: [0, 0, 0], geo: wallGeometry2 },
+            { pos: [0, 10, 100], rot: [0, 0, 0], geo: wallGeometry2 }
+        ];
+
+        walls.forEach(wall => {
+            const mesh = new THREE.Mesh(wall.geo, wallMaterial);
+            mesh.position.set(...wall.pos);
+            mesh.rotation.set(...wall.rot);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            this.scene.add(mesh);
+            
+            // Add physics
+            const shape = new CANNON.Box(new CANNON.Vec3(
+                wall.geo.parameters.width / 2,
+                wall.geo.parameters.height / 2,
+                wall.geo.parameters.depth / 2
+            ));
+            const body = new CANNON.Body({ mass: 0 });
+            body.addShape(shape);
+            body.position.set(...wall.pos);
+            this.physics.addBody(body);
+        });
     }
 
     createGameObjects() {
         try {
-            // Create player bee higher up
-            this.player = new Bee(0, 10, 0, true, null, this.physics);
-            if (this.player && this.player.model) {
-                this.scene.add(this.player.model);
+            // Create player first
+            this.player = new Player(0, 5, 0, this.physics);
+            this.scene.add(this.player.model);
+
+            // Create bees that follow the player
+            this.bees = [];
+            for (let i = 0; i < 5; i++) {
+                const bee = new Bee(
+                    Math.random() * 40 - 20,
+                    5,
+                    Math.random() * 40 - 20,
+                    this.physics
+                );
+                this.bees.push(bee);
+                this.scene.add(bee.model);
             }
 
             // Create flowers with more spacing
@@ -231,16 +265,25 @@ class Game {
                     null,
                     this.physics
                 );
-                if (flower && flower.model) {
-                    this.flowers.push(flower);
-                    this.scene.add(flower.model);
-                }
+                this.flowers.push(flower);
+                this.scene.add(flower.model);
             }
 
-            // Create hive higher up
-            this.hive = new Hive(0, 10, -30, null, this.physics);
-            if (this.hive && this.hive.model) {
-                this.scene.add(this.hive.model);
+            // Create hive on the ground
+            this.hive = new Hive(0, 0, -30, null, this.physics);
+            this.scene.add(this.hive.model);
+
+            // Add trees around the map
+            for (let i = 0; i < 30; i++) {
+                const tree = this.createBasicTree();
+                tree.position.set(
+                    Math.random() * 160 - 80,
+                    0,
+                    Math.random() * 160 - 80
+                );
+                tree.scale.setScalar(Math.random() * 2 + 1);
+                tree.rotation.y = Math.random() * Math.PI * 2;
+                this.scene.add(tree);
             }
         } catch (error) {
             console.error("Error creating game objects:", error);
@@ -250,18 +293,25 @@ class Game {
 
     animate() {
         requestAnimationFrame(() => this.animate());
-
         const deltaTime = 1/60;
         
         // Update physics
         this.physics.step(deltaTime);
 
-        // Update game objects
+        // Update player and camera
         if (this.player) {
             this.player.update(deltaTime);
             this.cameraController.updateCamera();
         }
 
+        // Update bees to follow player
+        if (this.bees) {
+            this.bees.forEach(bee => {
+                bee.update(deltaTime, this.player.position);
+            });
+        }
+
+        // Update other objects
         if (this.flowers) {
             this.flowers.forEach(flower => flower.update(deltaTime));
         }
