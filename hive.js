@@ -5,19 +5,17 @@ class Hive {
         this.storedPollen = 0;
         this.pollenToHoneyRate = 1;
         
-        // Create tall hive model
-        this.createTallHiveModel();
-        
-        // Setup physics
-        this.setupPhysics(physics);
+        this.createModel();
+        if (physics) {
+            this.setupPhysics(physics);
+        }
     }
 
-    createTallHiveModel() {
-        // Create a tall hive structure
+    createModel() {
         const geometry = new THREE.Group();
         
-        // Main tall body
-        const bodyGeometry = new THREE.CylinderGeometry(2, 2.5, 8, 8); // Made much taller (8 units)
+        // Main body - rectangular prism
+        const bodyGeometry = new THREE.BoxGeometry(4, 6, 4);
         const bodyMaterial = new THREE.MeshPhongMaterial({ 
             color: 0xD2691E,
             roughness: 0.7,
@@ -27,23 +25,20 @@ class Hive {
         this.body.castShadow = true;
         this.body.receiveShadow = true;
 
-        // Add horizontal rings for detail
-        for (let i = 0; i < 5; i++) {
-            const ringGeometry = new THREE.TorusGeometry(2.2, 0.2, 8, 16);
-            const ring = new THREE.Mesh(ringGeometry, bodyMaterial);
-            ring.position.y = -3 + (i * 1.5); // Spread rings along height
-            ring.rotation.x = Math.PI / 2;
-            geometry.add(ring);
-        }
-
-        // Add entrance hole
-        const entranceGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.5, 16);
+        // Entrance hole
+        const entranceGeometry = new THREE.BoxGeometry(1, 1, 0.5);
         const entranceMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
         const entrance = new THREE.Mesh(entranceGeometry, entranceMaterial);
-        entrance.position.set(0, 0, 2.5);
-        entrance.rotation.x = Math.PI / 2;
-        
-        // Add all parts to the group
+        entrance.position.set(0, 0, 2);
+
+        // Add details (horizontal stripes)
+        for (let i = 0; i < 4; i++) {
+            const stripeGeometry = new THREE.BoxGeometry(4.2, 0.3, 4.2);
+            const stripe = new THREE.Mesh(stripeGeometry, bodyMaterial);
+            stripe.position.y = -2 + (i * 1.5);
+            geometry.add(stripe);
+        }
+
         geometry.add(this.body);
         geometry.add(entrance);
         
@@ -52,16 +47,13 @@ class Hive {
     }
 
     setupPhysics(physics) {
-        // Create tall cylindrical physics body
-        const shape = new CANNON.Cylinder(2, 2.5, 8, 8); // Match visual dimensions
-        this.body = new CANNON.Body({
-            mass: 0, // Static body
+        const shape = new CANNON.Box(new CANNON.Vec3(2, 3, 2));
+        this.physicsBody = new CANNON.Body({
+            mass: 0,
             shape: shape,
-            position: new CANNON.Vec3(this.position.x, this.position.y, this.position.z),
-            material: new CANNON.Material({ friction: 0.5 })
+            position: new CANNON.Vec3(this.position.x, this.position.y, this.position.z)
         });
-        
-        physics.addBody(this.body);
+        physics.addBody(this.physicsBody);
     }
 
     update(deltaTime) {
@@ -72,10 +64,6 @@ class Hive {
             this.storedPollen -= honeyProduced;
             this.updateHUD();
         }
-
-        // Update model position from physics
-        this.model.position.copy(this.body.position);
-        this.model.quaternion.copy(this.body.quaternion);
     }
 
     receivePollen(amount) {

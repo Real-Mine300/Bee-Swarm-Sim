@@ -42,6 +42,10 @@ class Player {
             if (document.pointerLockElement === document.body) {
                 this.rotation.y -= e.movementX * this.mouseSensitivity;
                 this.model.rotation.y = this.rotation.y;
+                // Let the camera controller handle vertical movement
+                if (window.game && window.game.cameraController) {
+                    window.game.cameraController.handleMouseMove(e);
+                }
             }
         });
 

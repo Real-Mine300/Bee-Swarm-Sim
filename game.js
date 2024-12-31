@@ -18,6 +18,9 @@ class Game {
         
         // Setup event listeners
         document.getElementById('start-game').addEventListener('click', () => this.startGame());
+
+        this.gridSize = 10; // Size of each grid square
+        this.createGrid();
     }
 
     setupThreeJS() {
@@ -255,9 +258,12 @@ class Game {
                 this.scene.add(bee.model);
             }
 
-            // Create flowers with more spacing
+            // Create flower fields
             this.flowers = [];
-            for (let i = 0; i < 20; i++) {
+            this.createFlowerFields();
+
+            // Create scattered flowers
+            for (let i = 0; i < 10; i++) {
                 const flower = new Flower(
                     Math.random() * 80 - 40,
                     0,
@@ -274,17 +280,7 @@ class Game {
             this.scene.add(this.hive.model);
 
             // Add trees around the map
-            for (let i = 0; i < 30; i++) {
-                const tree = this.createBasicTree();
-                tree.position.set(
-                    Math.random() * 160 - 80,
-                    0,
-                    Math.random() * 160 - 80
-                );
-                tree.scale.setScalar(Math.random() * 2 + 1);
-                tree.rotation.y = Math.random() * Math.PI * 2;
-                this.scene.add(tree);
-            }
+            this.createTrees();
         } catch (error) {
             console.error("Error creating game objects:", error);
             alert("Error creating game objects. Please refresh the page.");
@@ -319,6 +315,9 @@ class Game {
             this.hive.update(deltaTime);
         }
 
+        // Update coordinates display
+        this.updateCoordinates();
+        
         // Render scene
         this.renderer.render(this.scene, this.camera);
     }
@@ -345,5 +344,120 @@ class Game {
                 );
             }
         });
+    }
+
+    createFlowerFields() {
+        const fields = [
+            { x: -40, z: -40, type: 'sunflower', color: 0xFFD700 },
+            { x: 40, z: -40, type: 'rose', color: 0xFF0000 },
+            { x: -40, z: 40, type: 'lavender', color: 0x9370DB },
+            { x: 40, z: 40, type: 'daisy', color: 0xFFFFFF }
+        ];
+
+        fields.forEach(field => {
+            // Create 25 flowers in a 5x5 grid for each field
+            for (let i = 0; i < 5; i++) {
+                for (let j = 0; j < 5; j++) {
+                    const flower = new Flower(
+                        field.x + (i * 4) - 8,  // Spread flowers 4 units apart
+                        0,
+                        field.z + (j * 4) - 8,
+                        null,
+                        this.physics
+                    );
+                    // Customize flower appearance based on type
+                    flower.head.material.color.setHex(field.color);
+                    flower.pollen = 150;  // More pollen in flower fields
+                    flower.maxPollen = 150;
+                    this.flowers.push(flower);
+                    this.scene.add(flower.model);
+                }
+            }
+        });
+    }
+
+    createGrid() {
+        // Create grid on the ground
+        const gridGeometry = new THREE.PlaneGeometry(200, 200);
+        const gridMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFFFFFF,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.1
+        });
+        
+        const grid = new THREE.Mesh(gridGeometry, gridMaterial);
+        grid.rotation.x = -Math.PI / 2;
+        grid.position.y = 0.01; // Slightly above ground to prevent z-fighting
+        this.scene.add(grid);
+
+        // Add coordinate markers every 10 units
+        for (let x = -100; x <= 100; x += 10) {
+            for (let z = -100; z <= 100; z += 10) {
+                const marker = this.createCoordinateMarker(x, z);
+                this.scene.add(marker);
+            }
+        }
+    }
+
+    createCoordinateMarker(x, z) {
+        const markerGeometry = new THREE.PlaneGeometry(1, 1);
+        const markerMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFFFFFF,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.5
+        });
+        
+        const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+        marker.rotation.x = -Math.PI / 2;
+        marker.position.set(x, 0.02, z);
+
+        // Add text sprite for coordinates
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = 64;
+        canvas.height = 64;
+        
+        context.fillStyle = 'white';
+        context.font = '12px Arial';
+        context.textAlign = 'center';
+        context.fillText(`${x},${z}`, 32, 32);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(spriteMaterial);
+        sprite.position.set(0, 0.5, 0);
+        sprite.scale.set(2, 1, 1);
+        
+        marker.add(sprite);
+        return marker;
+    }
+
+    updateCoordinates() {
+        if (this.player) {
+            const pos = this.player.position;
+            const coordDisplay = document.getElementById('coord-display');
+            coordDisplay.textContent = `${Math.round(pos.x)}, ${Math.round(pos.y)}, ${Math.round(pos.z)}`;
+            
+            // Highlight nearest grid square
+            const gridX = Math.round(pos.x / this.gridSize) * this.gridSize;
+            const gridZ = Math.round(pos.z / this.gridSize) * this.gridSize;
+            
+            // Update grid highlight effect (optional)
+            if (this.highlightedSquare) {
+                this.highlightedSquare.material.opacity = 0.5;
+            }
+            
+            // Find and highlight the current grid square
+            this.scene.traverse((object) => {
+                if (object.isMarker && 
+                    object.position.x === gridX && 
+                    object.position.z === gridZ) {
+                    object.material.opacity = 1.0;
+                    this.highlightedSquare = object;
+                }
+            });
+        }
     }
 } 
