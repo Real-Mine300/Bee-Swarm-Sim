@@ -5,24 +5,75 @@ class Game {
         this.bees = [];
         this.upgrades = {};
         this.isPlaying = false;
+
+        // Setup Three.js first
+        this.setupThreeJS();
         
         // Setup event listeners
         document.getElementById('start-game').addEventListener('click', () => this.startGame());
-        
-        this.setupThreeJS();
-        this.setupPhysics();
-        this.setupLighting();
-        this.createEnvironment();
+    }
 
-        // Set initial camera position higher and further back
+    setupThreeJS() {
+        // Create scene
+        this.scene = new THREE.Scene();
+        
+        // Create renderer
+        this.renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            alpha: false
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        // Add renderer to DOM
+        const container = document.getElementById('game-container');
+        container.appendChild(this.renderer.domElement);
+        
+        // Create camera
         this.camera = new THREE.PerspectiveCamera(
             75,
             window.innerWidth / window.innerHeight,
             0.1,
             1000
         );
-        this.camera.position.set(0, 30, 50); // Moved camera back and up
+        
+        // Set initial camera position
+        this.camera.position.set(0, 30, 50);
         this.camera.lookAt(0, 0, 0);
+        
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            this.camera.aspect = window.innerWidth / window.innerHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Set sky color
+        this.scene.background = new THREE.Color(0x87CEEB);
+        
+        // Setup other systems
+        this.setupLighting();
+        this.setupPhysics();
+        this.createEnvironment();
+    }
+
+    async startGame() {
+        if (this.isPlaying) return;
+        
+        await this.loadModels();
+        
+        this.isPlaying = true;
+        document.getElementById('main-menu').style.display = 'none';
+        
+        // Create game objects
+        this.createGameObjects();
+        
+        // Setup camera controller after player is created
+        this.cameraController = new CameraController(this.camera, this.player);
+        
+        // Start game loop
+        this.animate();
     }
 
     async loadModels() {
@@ -64,45 +115,6 @@ class Game {
         tree.add(leaves);
         
         return tree;
-    }
-
-    async startGame() {
-        if (this.isPlaying) return;
-        
-        // Load models before starting
-        await this.loadModels();
-        
-        this.isPlaying = true;
-        document.getElementById('main-menu').style.display = 'none';
-        
-        this.createGameObjects();
-        this.setupParticleSystems();
-        this.animate();
-    }
-
-    setupThreeJS() {
-        this.scene = new THREE.Scene();
-        this.scene.fog = new THREE.FogExp2(0x87CEEB, 0.001);
-        
-        this.renderer = new THREE.WebGLRenderer({ 
-            antialias: true,
-            powerPreference: "high-performance"
-        });
-        this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('game-container').appendChild(this.renderer.domElement);
-
-        // Handle window resizing
-        window.addEventListener('resize', () => {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            this.renderer.setSize(width, height);
-            if (this.player) {
-                this.player.camera.aspect = width / height;
-                this.player.camera.updateProjectionMatrix();
-            }
-        });
     }
 
     setupPhysics() {
@@ -155,9 +167,6 @@ class Game {
     }
 
     createEnvironment() {
-        // Set sky color
-        this.scene.background = new THREE.Color(0x87CEEB);
-
         // Ground with more visible color
         const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
         const groundMaterial = new THREE.MeshStandardMaterial({
@@ -221,17 +230,9 @@ class Game {
         // Update game objects
         if (this.player) {
             this.player.update(deltaTime);
-            
-            // Better camera following
-            const idealOffset = new THREE.Vector3(0, 15, 25); // Higher and further back
-            idealOffset.applyQuaternion(this.player.model.quaternion);
-            idealOffset.add(this.player.position);
-            
-            this.camera.position.lerp(idealOffset, 0.1);
-            this.camera.lookAt(this.player.position);
+            this.cameraController.updateCamera();
         }
 
-        // Update other objects
         if (this.flowers) {
             this.flowers.forEach(flower => flower.update(deltaTime));
         }
