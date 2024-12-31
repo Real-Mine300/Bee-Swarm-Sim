@@ -5,28 +5,58 @@ class Bee {
         this.speed = 3;
         this.followDistance = 5;
         this.height = 1;
+        this.pollenCapacity = 50;
+        this.currentPollen = 0;
+        this.collectionRate = 10; // Pollen per second
+        this.targetFlower = null;
         
         this.createModel();
         this.setupPhysics(physics);
     }
 
     update(deltaTime, playerPosition) {
-        // Calculate direction to player
-        const toPlayer = playerPosition.clone().sub(this.position);
-        const distance = toPlayer.length();
-        
-        // Only follow if too far from player
-        if (distance > this.followDistance) {
-            toPlayer.normalize().multiplyScalar(this.speed * deltaTime);
-            this.physicsBody.velocity.copy(toPlayer);
-        } else {
-            // Hover in place
-            this.physicsBody.velocity.set(0, Math.sin(Date.now() * 0.003) * 0.5, 0);
+        // Find nearest flower if not carrying max pollen
+        if (this.currentPollen < this.pollenCapacity && !this.targetFlower) {
+            this.targetFlower = this.findNearestFlower();
         }
-        
-        // Update model
-        this.model.position.copy(this.physicsBody.position);
-        this.position.copy(this.model.position);
+
+        // If we have a target flower and aren't full, collect pollen
+        if (this.targetFlower && this.currentPollen < this.pollenCapacity) {
+            const distance = this.position.distanceTo(this.targetFlower.position);
+            if (distance < 1) {
+                const collected = this.targetFlower.collectPollen(this.collectionRate * deltaTime);
+                this.currentPollen += collected;
+                if (this.currentPollen >= this.pollenCapacity || this.targetFlower.pollen <= 0) {
+                    this.targetFlower = null;
+                }
+            } else {
+                // Move towards flower
+                const direction = this.targetFlower.position.clone().sub(this.position).normalize();
+                this.position.add(direction.multiplyScalar(this.speed * deltaTime));
+            }
+        } else if (this.currentPollen > 0) {
+            // Return to hive
+            const hive = window.game.hive;
+            const distance = this.position.distanceTo(hive.position);
+            if (distance < 1) {
+                hive.receivePollen(this.currentPollen);
+                this.currentPollen = 0;
+            } else {
+                const direction = hive.position.clone().sub(this.position).normalize();
+                this.position.add(direction.multiplyScalar(this.speed * deltaTime));
+            }
+        } else {
+            // Follow player
+            const toPlayer = playerPosition.clone().sub(this.position);
+            const distance = toPlayer.length();
+            if (distance > this.followDistance) {
+                toPlayer.normalize().multiplyScalar(this.speed * deltaTime);
+                this.position.add(toPlayer);
+            }
+        }
+
+        // Update model position
+        this.model.position.copy(this.position);
         
         // Animate wings
         if (this.leftWing && this.rightWing) {
@@ -34,6 +64,23 @@ class Bee {
             this.leftWing.rotation.x = wingAngle;
             this.rightWing.rotation.x = wingAngle;
         }
+    }
+
+    findNearestFlower() {
+        let nearest = null;
+        let minDistance = Infinity;
+        
+        window.game.flowers.forEach(flower => {
+            if (flower.pollen > 0) {
+                const distance = this.position.distanceTo(flower.position);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearest = flower;
+                }
+            }
+        });
+        
+        return nearest;
     }
 
     createModel() {

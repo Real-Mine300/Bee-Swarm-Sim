@@ -243,24 +243,26 @@ class Game {
 
     async createGameObjects() {
         try {
-            // Create hive first
+            // Create taller hive
             this.hive = new Hive(0, 0, -30, null, this.physics);
+            this.hive.model.scale.setScalar(2.5);
             this.scene.add(this.hive.model);
+
+            // Create shop
+            this.shop = new Shop(51, 0, 0);
+            this.scene.add(this.shop.model);
 
             // Create player in front of hive
             this.player = new Player(0, 2, -20, this.physics);
             this.scene.add(this.player.model);
 
-            // Setup camera controller after player is created
+            // Setup camera controller
             this.cameraController = new CameraController(this.camera, this.player);
 
-            // Create flower fields
+            // Create flower fields with different types
             this.createFlowerFields();
 
-            // Create trees in clusters
-            this.createTrees();
-
-            // Create bees last
+            // Create bees
             this.createBees();
 
         } catch (error) {
@@ -340,10 +342,10 @@ class Game {
 
     createFlowerFields() {
         const fields = [
-            { x: -40, z: -40, width: 20, height: 20, type: 'sunflower', color: 0xFFD700 },
-            { x: 40, z: -40, width: 20, height: 20, type: 'rose', color: 0xFF0000 },
-            { x: -40, z: 40, width: 20, height: 20, type: 'lavender', color: 0x9370DB },
-            { x: 40, z: 40, width: 20, height: 20, type: 'daisy', color: 0xFFFFFF }
+            { x: -40, z: -40, width: 20, height: 20, type: Flower.TYPES.SUNFLOWER },
+            { x: 40, z: -40, width: 20, height: 20, type: Flower.TYPES.ROSE },
+            { x: -40, z: 40, width: 20, height: 20, type: Flower.TYPES.LAVENDER },
+            { x: 40, z: 40, width: 20, height: 20, type: Flower.TYPES.DAISY }
         ];
 
         this.flowers = [];
@@ -359,7 +361,8 @@ class Game {
                         null,
                         this.physics
                     );
-                    flower.head.material.color.setHex(field.color);
+                    flower.flowerType = field.type;
+                    flower.head.material.color.setHex(field.type.color);
                     flower.pollen = 150;
                     flower.maxPollen = 150;
                     this.flowers.push(flower);

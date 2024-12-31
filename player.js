@@ -8,6 +8,10 @@ class Player {
         this.mouseSensitivity = 0.002;
         this.minHeight = 2;
         this.canJump = true;
+        this.pollenCapacity = 100;
+        this.currentPollen = 0;
+        this.collectionRate = 20; // Pollen per second
+        this.collectionRange = 2; // How close player needs to be to collect
         
         this.createModel();
         this.setupPhysics(physics);
@@ -144,8 +148,51 @@ class Player {
             this.canJump = true;
         }
 
+        // Check for nearby flowers and collect pollen
+        this.collectPollenFromNearbyFlowers(deltaTime);
+
+        // Deposit pollen if near hive
+        this.depositPollenToHive();
+
         // Update model position from physics
         this.model.position.copy(this.physicsBody.position);
         this.position.copy(this.model.position);
+
+        // Update HUD
+        this.updateHUD();
+    }
+
+    collectPollenFromNearbyFlowers(deltaTime) {
+        if (this.currentPollen >= this.pollenCapacity) return;
+
+        if (window.game && window.game.flowers) {
+            window.game.flowers.forEach(flower => {
+                const distance = this.position.distanceTo(flower.position);
+                if (distance <= this.collectionRange && flower.pollen > 0) {
+                    const collectionAmount = this.collectionRate * deltaTime;
+                    const collected = flower.collectPollen(collectionAmount);
+                    this.currentPollen = Math.min(this.pollenCapacity, this.currentPollen + collected);
+                }
+            });
+        }
+    }
+
+    depositPollenToHive() {
+        if (this.currentPollen <= 0) return;
+
+        if (window.game && window.game.hive) {
+            const distance = this.position.distanceTo(window.game.hive.position);
+            if (distance <= 3) { // Deposit range
+                window.game.hive.receivePollen(this.currentPollen);
+                this.currentPollen = 0;
+            }
+        }
+    }
+
+    updateHUD() {
+        const pollenCount = document.getElementById('pollen-count');
+        if (pollenCount) {
+            pollenCount.textContent = Math.floor(this.currentPollen);
+        }
     }
 } 

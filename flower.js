@@ -3,8 +3,10 @@ class Flower {
         this.position = new THREE.Vector3(x, y, z);
         this.pollen = 100;
         this.maxPollen = 100;
-        this.originalHeight = 2;
-        this.minHeight = 0.5;
+        this.originalHeight = 1.5;
+        this.minHeight = 0.3;
+        this.isInRange = false;
+        this.flowerType = this.constructor.TYPES.DAISY;
         
         this.createModel();
         if (physics) {
@@ -27,8 +29,64 @@ class Flower {
         }
     }
 
+    collectPollen(amount) {
+        const collectedAmount = Math.min(this.pollen, amount);
+        this.pollen -= collectedAmount;
+        
+        // Update visual state immediately when pollen is collected
+        if (this.pollen <= 0) {
+            this.head.rotation.x = Math.PI / 6;
+            this.head.material.color.multiplyScalar(0.8);
+        }
+        
+        return collectedAmount;
+    }
+
+    // Add flower types
+    static TYPES = {
+        SUNFLOWER: {
+            color: 0xFFD700,
+            pollenValue: 15,
+            regrowthRate: 0.1
+        },
+        ROSE: {
+            color: 0xFF0000,
+            pollenValue: 25,
+            regrowthRate: 0.05
+        },
+        LAVENDER: {
+            color: 0x9370DB,
+            pollenValue: 20,
+            regrowthRate: 0.08
+        },
+        DAISY: {
+            color: 0xFFFFFF,
+            pollenValue: 10,
+            regrowthRate: 0.15
+        }
+    };
+
     update(deltaTime) {
         if (!this.stem || !this.head) return;
+
+        // Check if player is in range
+        if (window.game && window.game.player) {
+            const distance = this.position.distanceTo(window.game.player.position);
+            this.isInRange = distance <= window.game.player.collectionRange;
+            
+            // Visual feedback when in range
+            if (this.isInRange && this.pollen > 0) {
+                this.head.material.emissive.setHex(0x444444);
+            } else {
+                this.head.material.emissive.setHex(0x000000);
+            }
+        }
+
+        // Regrow pollen slowly
+        if (this.pollen < this.maxPollen) {
+            this.pollen += this.flowerType.regrowthRate * deltaTime;
+            this.pollen = Math.min(this.pollen, this.maxPollen);
+        }
 
         // Update height based on pollen amount
         const pollenRatio = this.pollen / this.maxPollen;
@@ -36,23 +94,37 @@ class Flower {
         
         // Update stem height
         this.stem.scale.y = targetHeight / this.originalHeight;
+        
+        // Update head position and scale
         this.head.position.y = targetHeight;
+        
+        // Make head droop slightly when empty
+        if (this.pollen <= 0) {
+            this.head.rotation.x = Math.PI / 6; // Tilt forward when empty
+            this.head.material.color.multiplyScalar(0.8); // Darken color when empty
+        } else {
+            this.head.rotation.x = 0;
+            this.head.material.color.copy(new THREE.Color(this.flowerType.color));
+        }
     }
 
     createModel() {
         const geometry = new THREE.Group();
         
-        // Create rectangular stem
+        // Create rectangular stem (thinner)
         this.stem = new THREE.Mesh(
-            new THREE.BoxGeometry(0.3, this.originalHeight, 0.3),
+            new THREE.BoxGeometry(0.2, this.originalHeight, 0.2),
             new THREE.MeshPhongMaterial({ color: 0x228B22 })
         );
         this.stem.position.y = this.originalHeight / 2;
         
-        // Create rectangular flower head
+        // Create rectangular flower head (slightly smaller)
         this.head = new THREE.Mesh(
-            new THREE.BoxGeometry(0.8, 0.4, 0.8),
-            new THREE.MeshPhongMaterial({ color: 0xFF69B4 })
+            new THREE.BoxGeometry(0.6, 0.3, 0.6),
+            new THREE.MeshPhongMaterial({ 
+                color: 0xFF69B4,
+                emissive: 0x000000
+            })
         );
         this.head.position.y = this.originalHeight;
         
