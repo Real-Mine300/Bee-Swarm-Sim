@@ -13,6 +13,16 @@ class Game {
         this.setupPhysics();
         this.setupLighting();
         this.createEnvironment();  // Create environment immediately
+        
+        // Add initial camera until player is created
+        this.camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        this.camera.position.set(0, 15, 30);
+        this.camera.lookAt(0, 0, 0);
     }
 
     async loadModels() {
@@ -40,12 +50,15 @@ class Game {
         const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.8, 5, 8);
         const trunkMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
         const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+        trunk.castShadow = true;
+        trunk.receiveShadow = true;
         
         // Create leaves
         const leavesGeometry = new THREE.ConeGeometry(2, 4, 8);
         const leavesMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 });
         const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
         leaves.position.y = 4;
+        leaves.castShadow = true;
         
         tree.add(trunk);
         tree.add(leaves);
@@ -150,13 +163,11 @@ class Game {
     }
 
     createEnvironment() {
-        // Sky
-        const sky = new THREE.Sky();
-        sky.scale.setScalar(1000);
-        this.scene.add(sky);
+        // Set sky color
+        this.scene.background = new THREE.Color(0x87CEEB);
 
         // Ground with realistic grass
-        const groundGeometry = new THREE.PlaneGeometry(1000, 1000, 100, 100);
+        const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
         const groundMaterial = new THREE.MeshStandardMaterial({
             color: 0x567d46,
             roughness: 0.8,
@@ -165,7 +176,7 @@ class Game {
         
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         ground.rotation.x = -Math.PI / 2;
-        ground.position.y = -10;
+        ground.position.y = 0;  // Moved up from -10
         ground.receiveShadow = true;
         this.scene.add(ground);
 
@@ -177,9 +188,9 @@ class Game {
         groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
         this.physics.addBody(groundBody);
 
-        // Add trees and rocks for environment
+        // Add trees
         for (let i = 0; i < 50; i++) {
-            const tree = this.models.tree.scene.clone();
+            const tree = this.createBasicTree();
             tree.position.set(
                 Math.random() * 200 - 100,
                 0,
@@ -187,19 +198,13 @@ class Game {
             );
             tree.scale.setScalar(Math.random() * 2 + 1);
             tree.rotation.y = Math.random() * Math.PI * 2;
-            tree.traverse(child => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
-            });
             this.scene.add(tree);
         }
     }
 
     createGameObjects() {
         // Create player bee with physics
-        this.player = new Bee(0, 5, 0, true, this.models.bee, this.physics);
+        this.player = new Bee(0, 5, 0, true, null, this.physics);
         this.scene.add(this.player.model);
 
         // Create flowers with physics
@@ -209,7 +214,7 @@ class Game {
                 Math.random() * 100 - 50,
                 0,
                 Math.random() * 100 - 50,
-                this.models.flower,
+                null,
                 this.physics
             );
             this.flowers.push(flower);
@@ -217,7 +222,7 @@ class Game {
         }
 
         // Create hive with physics
-        this.hive = new Hive(0, 5, -30, this.models.hive, this.physics);
+        this.hive = new Hive(0, 5, -30, null, this.physics);
         this.scene.add(this.hive.model);
     }
 
@@ -230,25 +235,30 @@ class Game {
         this.physics.step(deltaTime);
 
         // Update game objects
-        this.player.update(deltaTime);
-        this.flowers.forEach(flower => flower.update(deltaTime));
-        this.hive.update(deltaTime);
+        if (this.player) {
+            this.player.update(deltaTime);
+            
+            // Update camera to follow player
+            const idealOffset = new THREE.Vector3(0, 10, 20);
+            idealOffset.applyQuaternion(this.player.model.quaternion);
+            idealOffset.add(this.player.position);
+            
+            this.camera.position.lerp(idealOffset, 0.1);
+            this.camera.lookAt(this.player.position);
+        }
+
+        if (this.flowers) {
+            this.flowers.forEach(flower => flower.update(deltaTime));
+        }
+        if (this.hive) {
+            this.hive.update(deltaTime);
+        }
 
         // Update particle systems
         this.updateParticles();
 
-        // Center camera on player
-        if (this.player.camera) {
-            const idealOffset = new THREE.Vector3(0, 5, 10);
-            idealOffset.applyQuaternion(this.player.model.quaternion);
-            idealOffset.add(this.player.position);
-            
-            this.player.camera.position.lerp(idealOffset, 0.1);
-            this.player.camera.lookAt(this.player.position);
-        }
-
-        // Render scene
-        this.renderer.render(this.scene, this.player.camera);
+        // Render scene with the appropriate camera
+        this.renderer.render(this.scene, this.camera);
     }
 
     updateParticles() {
