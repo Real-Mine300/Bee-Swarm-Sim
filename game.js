@@ -71,19 +71,21 @@ class Game {
     async startGame() {
         if (this.isPlaying) return;
         
-        await this.loadModels();
-        
-        this.isPlaying = true;
-        document.getElementById('main-menu').style.display = 'none';
-        
-        // Create game objects
-        this.createGameObjects();
-        
-        // Setup camera controller after player is created
-        this.cameraController = new CameraController(this.camera, this.player);
-        
-        // Start game loop
-        this.animate();
+        try {
+            await this.loadModels();
+            
+            this.isPlaying = true;
+            document.getElementById('main-menu').style.display = 'none';
+            
+            // Create game objects in correct order
+            await this.createGameObjects();
+            
+            // Start game loop
+            this.animate();
+        } catch (error) {
+            console.error("Error starting game:", error);
+            alert("Error starting game. Please refresh and try again.");
+        }
     }
 
     async loadModels() {
@@ -239,63 +241,77 @@ class Game {
         });
     }
 
-    createGameObjects() {
+    async createGameObjects() {
         try {
-            // Create player first
-            this.player = new Player(0, 5, 0, this.physics);
+            // Create hive first
+            this.hive = new Hive(0, 0, -30, null, this.physics);
+            this.scene.add(this.hive.model);
+
+            // Create player in front of hive
+            this.player = new Player(0, 2, -20, this.physics);
             this.scene.add(this.player.model);
 
-            // Create flower fields in rectangular patches
+            // Setup camera controller after player is created
+            this.cameraController = new CameraController(this.camera, this.player);
+
+            // Create flower fields
             this.createFlowerFields();
 
             // Create trees in clusters
             this.createTrees();
 
-            // Create bees that follow the player
+            // Create bees last
             this.createBees();
-
-            // Create hive
-            this.createHive();
 
         } catch (error) {
             console.error("Error creating game objects:", error);
-            alert("Error creating game objects. Please refresh the page.");
+            throw error;
         }
     }
 
     animate() {
         requestAnimationFrame(() => this.animate());
-        const deltaTime = 1/60;
         
-        // Update physics
-        this.physics.step(deltaTime);
+        try {
+            const deltaTime = 1/60;
+            
+            // Update physics
+            this.physics.step(deltaTime);
 
-        // Update player and camera
-        if (this.player) {
-            this.player.update(deltaTime);
-            this.cameraController.updateCamera();
-        }
+            // Update player and camera
+            if (this.player && this.player.update) {
+                this.player.update(deltaTime);
+            }
+            if (this.cameraController && this.cameraController.updateCamera) {
+                this.cameraController.updateCamera();
+            }
 
-        // Update bees to follow player
-        if (this.bees) {
-            this.bees.forEach(bee => {
-                bee.update(deltaTime, this.player.position);
-            });
-        }
+            // Update bees
+            if (this.bees) {
+                this.bees.forEach(bee => {
+                    if (bee.update && this.player) {
+                        bee.update(deltaTime, this.player.position);
+                    }
+                });
+            }
 
-        // Update other objects
-        if (this.flowers) {
-            this.flowers.forEach(flower => flower.update(deltaTime));
-        }
-        if (this.hive) {
-            this.hive.update(deltaTime);
-        }
+            // Update flowers
+            if (this.flowers) {
+                this.flowers.forEach(flower => {
+                    if (flower.update) {
+                        flower.update(deltaTime);
+                    }
+                });
+            }
 
-        // Update coordinates display
-        this.updateCoordinates();
-        
-        // Render scene
-        this.renderer.render(this.scene, this.camera);
+            // Update coordinates display
+            this.updateCoordinates();
+            
+            // Render scene
+            this.renderer.render(this.scene, this.camera);
+        } catch (error) {
+            console.error("Error in animation loop:", error);
+        }
     }
 
     updateParticles() {
@@ -469,20 +485,21 @@ class Game {
 
     createBees() {
         this.bees = [];
-        for (let i = 0; i < 5; i++) {
-            const bee = new Bee(
-                Math.random() * 40 - 20,
-                5 + Math.random() * 3,
-                Math.random() * 40 - 20,
-                this.physics
-            );
-            this.bees.push(bee);
-            this.scene.add(bee.model);
+        try {
+            for (let i = 0; i < 5; i++) {
+                const bee = new Bee(
+                    Math.random() * 40 - 20,
+                    5 + Math.random() * 3,
+                    Math.random() * 40 - 20,
+                    this.physics
+                );
+                if (bee.model) {
+                    this.bees.push(bee);
+                    this.scene.add(bee.model);
+                }
+            }
+        } catch (error) {
+            console.error("Error creating bees:", error);
         }
-    }
-
-    createHive() {
-        this.hive = new Hive(0, 0, -30, null, this.physics);
-        this.scene.add(this.hive.model);
     }
 } 

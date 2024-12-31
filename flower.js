@@ -12,7 +12,24 @@ class Flower {
         }
     }
 
+    setupPhysics(physics) {
+        try {
+            // Use box shape instead of cylinder for better performance
+            const shape = new CANNON.Box(new CANNON.Vec3(0.4, this.originalHeight/2, 0.4));
+            this.physicsBody = new CANNON.Body({
+                mass: 0, // Static body
+                shape: shape,
+                position: new CANNON.Vec3(this.position.x, this.position.y + this.originalHeight/2, this.position.z)
+            });
+            physics.addBody(this.physicsBody);
+        } catch (error) {
+            console.error("Error setting up flower physics:", error);
+        }
+    }
+
     update(deltaTime) {
+        if (!this.stem || !this.head) return;
+
         // Update height based on pollen amount
         const pollenRatio = this.pollen / this.maxPollen;
         const targetHeight = this.minHeight + (this.originalHeight - this.minHeight) * pollenRatio;
@@ -20,39 +37,6 @@ class Flower {
         // Update stem height
         this.stem.scale.y = targetHeight / this.originalHeight;
         this.head.position.y = targetHeight;
-        
-        // Update physics body height if it exists
-        if (this.physicsBody) {
-            this.physicsBody.shapes[0].height = targetHeight;
-            this.physicsBody.updateBoundingSphereRadius();
-            
-            // Update model position from physics
-            this.model.position.copy(new THREE.Vector3(
-                this.physicsBody.position.x,
-                this.physicsBody.position.y,
-                this.physicsBody.position.z
-            ));
-            this.model.quaternion.copy(new THREE.Quaternion(
-                this.physicsBody.quaternion.x,
-                this.physicsBody.quaternion.y,
-                this.physicsBody.quaternion.z,
-                this.physicsBody.quaternion.w
-            ));
-        }
-    }
-
-    setupPhysics(physics) {
-        try {
-            const shape = new CANNON.Cylinder(0.5, 0.5, this.originalHeight);
-            this.physicsBody = new CANNON.Body({
-                mass: 0, // Static body
-                shape: shape,
-                position: new CANNON.Vec3(this.position.x, this.position.y, this.position.z)
-            });
-            physics.addBody(this.physicsBody);
-        } catch (error) {
-            console.error("Error setting up flower physics:", error);
-        }
     }
 
     createModel() {
