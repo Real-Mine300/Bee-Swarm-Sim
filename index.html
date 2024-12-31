@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Bee Game</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Add Three.js -->
+    <!-- Add Three.js and required dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cannon.js@0.6.2/cannon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/objects/Sky.js"></script>
 </head>
 <body>
     <div id="game-container">
-        <!-- Remove canvas since Three.js will create its own -->
         <div id="hud">
             <div id="stats">
                 <div>Pollen: <span id="pollen-count">0</span></div>
@@ -31,6 +33,7 @@
         </div>
     </div>
 
+    <!-- Load game scripts after Three.js -->
     <script src="game.js"></script>
     <script src="bee.js"></script>
     <script src="flower.js"></script>
@@ -39,6 +42,7 @@
     <script src="save-system.js"></script>
     <script src="mobile-controls.js"></script>
     <script>
+        // Initialize game after all scripts are loaded
         window.addEventListener('load', () => {
             window.game = new Game();
         });

@@ -1,5 +1,10 @@
 class Game {
     constructor() {
+        this.honey = 0;
+        this.totalHoney = 0;
+        this.bees = [];
+        this.upgrades = {};
+        
         this.setupThreeJS();
         this.setupPhysics();
         this.setupLighting();

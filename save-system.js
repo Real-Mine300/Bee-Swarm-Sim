@@ -44,17 +44,19 @@ class SaveSystem {
 }
 
 function exportSave() {
+    // Get the game instance
+    const game = window.game;
+    
     // Gather all relevant game state
     const gameState = {
-        honey: honey,
-        totalHoney: totalHoney,
-        bees: bees.map(bee => ({
+        honey: game.honey,
+        totalHoney: game.totalHoney,
+        bees: game.bees.map(bee => ({
             level: bee.level,
             cost: bee.cost,
             honeyPerSecond: bee.honeyPerSecond
         })),
-        upgrades: upgrades,
-        // Add any other important game state here
+        upgrades: game.upgrades,
     };
 
     // Convert to string and encode
@@ -74,15 +76,18 @@ function importSave() {
     if (!saveString) return;
 
     try {
+        // Get the game instance
+        const game = window.game;
+        
         // Decode and parse the save string
         const gameState = JSON.parse(atob(saveString));
 
         // Restore game state
-        honey = gameState.honey;
-        totalHoney = gameState.totalHoney;
+        game.honey = gameState.honey;
+        game.totalHoney = gameState.totalHoney;
         
         // Restore bees
-        bees = gameState.bees.map(beeData => {
+        game.bees = gameState.bees.map(beeData => {
             return {
                 level: beeData.level,
                 cost: beeData.cost,
@@ -90,10 +95,10 @@ function importSave() {
             };
         });
         
-        upgrades = gameState.upgrades;
+        game.upgrades = gameState.upgrades;
         
         // Update UI
-        updateDisplay();
+        game.updateDisplay();
         alert('Game restored successfully!');
     } catch (error) {
         alert('Invalid save data!');
